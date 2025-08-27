@@ -30,33 +30,35 @@ function processTrade(trade: any) {
   const intervals = [30, 60, 300, 1000];
   intervals.forEach((interval) => {
     const bucketKey = `${symbol}_${interval}`;
-    const bucketStart =
+    const currentBucketStart =
       Math.floor(timestamp / (interval * 1000)) * (interval * 1000);
+
+    const existingCandle = candles.get(bucketKey);
+    if (existingCandle && existingCandle.startTime < currentBucketStart) {
+      console.log(
+        `Storing completed candle: ${bucketKey} (${existingCandle.startTime} -> ${currentBucketStart})`
+      );
+      storeCandle(existingCandle);
+      candles.delete(bucketKey);
+    }
 
     if (!candles.has(bucketKey)) {
       candles.set(bucketKey, {
         symbol,
         interval,
-        startTime: bucketStart,
+        startTime: currentBucketStart,
         open: price,
         high: price,
         low: price,
         close: price,
       });
+      console.log(` Created new candle: ${bucketKey}`);
     } else {
       const candle = candles.get(bucketKey);
       candle.high = Math.max(candle.high, price);
       candle.low = Math.min(candle.low, price);
       candle.close = price;
-    }
-
-    const now = Date.now();
-    const bucketEnd = bucketStart + interval * 1000;
-    if (now >= bucketEnd) {
-      const completedCandle = candles.get(bucketKey);
-      candles.delete(bucketKey);
-      publisher.publish("completed_candles", JSON.stringify(completedCandle));
-      storeCandle(completedCandle);
+      console.log(` Updated candle: ${bucketKey}`);
     }
   });
 }
