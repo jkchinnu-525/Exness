@@ -7,16 +7,28 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node index.ts",
+    "build": "tsc",
+    "start": "node dist/index.ts"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^5.1.0",
-    "pg": "^8.16.3"
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "redis": "^5.8.2",
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
-    "@types/pg": "^8.15.5"
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
   }
 }

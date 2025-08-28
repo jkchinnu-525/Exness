@@ -1,5 +1,5 @@
 export interface Candle {
-  time: Date;
+  time: number;
   symbol: string;
   open: number;
   close: number;

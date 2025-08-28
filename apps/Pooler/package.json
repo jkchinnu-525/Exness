@@ -20,6 +20,7 @@
   "devDependencies": {
     "@types/pg": "^8.15.5",
     "@types/redis": "^4.0.11",
-    "@types/websocket": "^1.0.10"
+    "@types/websocket": "^1.0.10",
+    "tsx": "^4.20.5"
   }
 }

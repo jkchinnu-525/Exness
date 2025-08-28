@@ -1,5 +1,6 @@
 import { createClient } from "redis";
-import { client, connectDB } from "./db/connection";
+import { client, connectDB, query } from "./db/connection";
+
 const subscriber = createClient({
   url: "redis://localhost:6379",
 });
@@ -20,6 +21,7 @@ async function startConsumer() {
       const trade = JSON.parse(message);
       processTrade(trade);
     });
+    startCandleBroadcasting();
   } catch (err) {
     console.error("Redis connection failed:", err);
   }
@@ -27,7 +29,10 @@ async function startConsumer() {
 
 function processTrade(trade: any) {
   const { symbol, price, timestamp } = trade;
-  const intervals = [30, 60, 300, 1000];
+
+  broadcastLiveTrades(trade);
+
+  const intervals = [30, 60, 300, 3600];
   intervals.forEach((interval) => {
     const bucketKey = `${symbol}_${interval}`;
     const currentBucketStart =
@@ -61,12 +66,87 @@ function processTrade(trade: any) {
       console.log(` Updated candle: ${bucketKey}`);
     }
   });
+  broadcastCurrentCandles(symbol);
+}
+
+async function broadcastCurrentCandles(symbol: string) {
+  const timeframes = ["30s", "1m", "5m", "1h"];
+  const intervals = [30, 60, 300, 3600];
+
+  timeframes.forEach(async (timeframe, index) => {
+    const interval = intervals[index];
+    const bucketKey = `${symbol}_${interval}`;
+    const currentCandle = candles.get(bucketKey);
+
+    if (currentCandle) {
+      const candleData = {
+        time: currentCandle.startTime,
+        symbol: currentCandle.symbol,
+        timeframe,
+        open: currentCandle.open,
+        high: currentCandle.high,
+        low: currentCandle.low,
+        close: currentCandle.close,
+      };
+      try {
+        await publisher.publish("candles-updates", JSON.stringify(candleData));
+      } catch (error) {
+        console.error(
+          `Error broadcasting current candle for ${symbol} ${timeframe}:`,
+          error
+        );
+      }
+    }
+  });
+}
+
+async function broadcastCandleUpdates() {
+  const timeframes = ["30s", "1m", "5m", "1h"];
+  const symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"];
+
+  for (const symbol of symbols) {
+    for (const timeframe of timeframes) {
+      try {
+        const tableName = `candles_${timeframe}`;
+        const result = await query(
+          `SELECT 
+            (EXTRACT(EPOCH FROM bucket) * 1000)::bigint AS time,
+            symbol, open, high, low, close
+          FROM ${tableName}
+          WHERE symbol = $1
+          ORDER BY bucket DESC
+          LIMIT 1`,
+          [symbol]
+        );
+
+        if (result.rows.length > 0) {
+          const candle = {
+            ...result.rows[0],
+            symbol,
+            timeframe,
+            open: parseFloat(result.rows[0].open),
+            close: parseFloat(result.rows[0].close),
+            high: parseFloat(result.rows[0].high),
+            low: parseFloat(result.rows[0].low),
+          };
+          await publisher.publish("candles-updates", JSON.stringify(candle));
+        }
+      } catch (error) {
+        console.error(`Error broadcastin ${symbol} ${timeframe}:`, error);
+      }
+    }
+  }
+}
+
+async function startCandleBroadcasting() {
+  setInterval(broadcastCandleUpdates, 250);
+  console.log("Started candle broadcasting every 250ms");
 }
 
 async function storeCandle(candle: any) {
   try {
     await client.query(
-      `INSERT INTO candle_table (time, symbol, price, high, low, open, close)
+      `INSERT INTO CANDLE_TABLE (time, symbol, price, high, low, open, close)
      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         new Date(candle.startTime),
@@ -81,6 +161,23 @@ async function storeCandle(candle: any) {
     console.log(`Stored candle for ${candle.symbol} at ${candle.startTime}`);
   } catch (err) {
     console.error("Error storing candle:", err);
+  }
+}
+
+async function broadcastLiveTrades(trade: any) {
+  try {
+    // Broadcast individual trades for real-time candle updates
+    await publisher.publish(
+      "live-trades",
+      JSON.stringify({
+        symbol: trade.symbol,
+        price: trade.price,
+        quantity: trade.quantity,
+        timestamp: trade.timestamp,
+      })
+    );
+  } catch (error) {
+    console.error("Error broadcasting live trade:", error);
   }
 }
 

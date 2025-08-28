@@ -30,6 +30,8 @@
     "typescript": "^5.9.2"
   },
   "exports": {
+    ".": "./src/index.ts",
+    "./components": "./src/components/index.ts",
     "./globals.css": "./src/styles/globals.css",
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
