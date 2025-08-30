@@ -7,7 +7,7 @@ const router = Router();
 router.get("/:symbol/:timeframe", async (req, res) => {
   try {
     const { symbol, timeframe } = req.params;
-    const limit = 50;
+    const limit = 100;
 
     if (!["30s", "1m", "5m", "1h"].includes(timeframe)) {
       return res.status(400).json({

@@ -47,22 +47,40 @@ export function ChartArea({
   const [activeTool, setActiveTool] = useState("cursor");
   const [showIndicators, setShowIndicators] = useState(false);
 
-  // Mock price data
-  const mockPrice =
-    symbol === "BTCUSDT"
-      ? "110,889.42"
-      : symbol === "XAUUSD"
-        ? "3,384.518"
-        : "1.15916";
-  const mockChange =
-    symbol === "BTCUSDT"
-      ? "+144.46"
-      : symbol === "XAUUSD"
-        ? "-0.104"
-        : "+0.0012";
-  const mockChangePercent =
-    symbol === "BTCUSDT" ? "+0.13%" : symbol === "XAUUSD" ? "-0.00%" : "+0.10%";
-  const isPositive = !mockChange.startsWith("-");
+  // Mock price data for crypto symbols
+  const getMockData = (sym: string) => {
+    if (sym === "BTCUSDT") {
+      return {
+        price: "110,889.42",
+        change: "+144.46",
+        changePercent: "+0.13%",
+        name: "Bitcoin vs US Dollar",
+      };
+    } else if (sym === "ETHUSDT") {
+      return {
+        price: "4,180.25",
+        change: "+82.15",
+        changePercent: "+2.00%",
+        name: "Ethereum vs US Dollar",
+      };
+    } else if (sym === "SOLUSDT") {
+      return {
+        price: "245.67",
+        change: "-5.33",
+        changePercent: "-2.12%",
+        name: "Solana vs US Dollar",
+      };
+    }
+    return {
+      price: "0.00",
+      change: "0.00",
+      changePercent: "0.00%",
+      name: symbol,
+    };
+  };
+
+  const mockData = getMockData(symbol);
+  const isPositive = !mockData.change.startsWith("-");
 
   return (
     <div className="flex-1 flex flex-col bg-[#0b0e11]">
@@ -74,14 +92,7 @@ export function ChartArea({
             <TrendingUp className="text-blue-400" size={20} />
             <div>
               <h2 className="text-lg font-semibold text-white">
-                {symbol === "BTCUSDT"
-                  ? "Bitcoin vs US Dollar"
-                  : symbol === "XAUUSD"
-                    ? "Gold vs US Dollar"
-                    : symbol === "EURUSD"
-                      ? "Euro vs US Dollar"
-                      : symbol}{" "}
-                • {timeframe}
+                {mockData.name} • {timeframe}
               </h2>
             </div>
           </div>
@@ -89,17 +100,17 @@ export function ChartArea({
           {/* Price Info */}
           <div className="flex items-center gap-4 text-sm">
             <span className="text-gray-400">O</span>
-            <span className="text-white font-mono">{mockPrice}</span>
+            <span className="text-white font-mono">{mockData.price}</span>
             <span className="text-gray-400">H</span>
-            <span className="text-white font-mono">{mockPrice}</span>
+            <span className="text-white font-mono">{mockData.price}</span>
             <span className="text-gray-400">L</span>
-            <span className="text-white font-mono">{mockPrice}</span>
+            <span className="text-white font-mono">{mockData.price}</span>
             <span className="text-gray-400">C</span>
-            <span className="text-white font-mono">{mockPrice}</span>
+            <span className="text-white font-mono">{mockData.price}</span>
             <span
               className={`font-medium ${isPositive ? "text-green-400" : "text-red-400"}`}
             >
-              {mockChange} ({mockChangePercent})
+              {mockData.change} ({mockData.changePercent})
             </span>
           </div>
         </div>
@@ -186,7 +197,7 @@ export function ChartArea({
           <div
             className={`font-mono text-lg font-semibold ${isPositive ? "text-green-400" : "text-red-400"}`}
           >
-            {mockPrice}
+            {mockData.price}
           </div>
         </div>
       </div>

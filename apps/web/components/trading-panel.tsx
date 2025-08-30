@@ -14,14 +14,35 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
   const [takeProfit, setTakeProfit] = useState("");
   const [activeTab, setActiveTab] = useState<"buy" | "sell">("buy");
 
-  // Mock data
-  const mockPrice =
-    symbol === "BTCUSDT"
-      ? "110,911.02"
-      : symbol === "XAUUSD"
-        ? "3,384.518"
-        : "1.15916";
-  const spread = symbol === "BTCUSDT" ? "21.60" : "0.002";
+  // Mock data for crypto symbols
+  const getMockPriceData = (sym: string) => {
+    if (sym === "BTCUSDT") {
+      return {
+        sellPrice: "110,889.42",
+        buyPrice: "110,911.02",
+        spread: "21.60",
+      };
+    } else if (sym === "ETHUSDT") {
+      return {
+        sellPrice: "4,180.25",
+        buyPrice: "4,182.75",
+        spread: "2.50",
+      };
+    } else if (sym === "SOLUSDT") {
+      return {
+        sellPrice: "245.67",
+        buyPrice: "245.89",
+        spread: "0.22",
+      };
+    }
+    return {
+      sellPrice: "0.00",
+      buyPrice: "0.00",
+      spread: "0.00",
+    };
+  };
+
+  const priceData = getMockPriceData(symbol);
 
   return (
     <div className="w-80 bg-[#0f1419] border-l border-[#1f2a35] flex flex-col">
@@ -38,15 +59,19 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-400">Sell</span>
-            <span className="text-lg font-mono text-red-400">{mockPrice}</span>
+            <span className="text-lg font-mono text-red-400">
+              {priceData.sellPrice}
+            </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-400">Buy</span>
             <span className="text-lg font-mono text-green-400">
-              {mockPrice}
+              {priceData.buyPrice}
             </span>
           </div>
-          <div className="text-xs text-gray-500">Spread: {spread} USD</div>
+          <div className="text-xs text-gray-500">
+            Spread: {priceData.spread} USD
+          </div>
         </div>
       </div>
 

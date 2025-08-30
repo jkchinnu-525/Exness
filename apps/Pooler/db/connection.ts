@@ -19,8 +19,4 @@ export async function connectDB() {
   }
 }
 
-export async function query(text: string, params?: any[]) {
-  return client.query(text, params);
-}
-
 export { client };

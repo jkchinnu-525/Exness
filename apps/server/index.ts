@@ -26,15 +26,19 @@ async function setupRedis() {
   await subscriber.connect();
   console.log("Redis subscriber connected");
 
-  await subscriber.subscribe("candles-updates", (message) => {
-    console.log("Received candle update:", message);
-    const candleUpdate = JSON.parse(message);
-    const room = `candles-${candleUpdate.symbol}-${candleUpdate.timeframe}`;
-    console.log(`Emitting to room: ${room}`);
-    io.to(room).emit("candle-update", candleUpdate);
+  // await subscriber.subscribe("live-candles", (message) => {
+  //   const candle = JSON.parse(message);
+  //   const room = `candles-${candle.symbol}-${candle.timeframe}`;
+  //   io.to(room).emit("live-candle", candle);
+  // });
+
+  await subscriber.subscribe("candle-snapshots", (message) => {
+    const candle = JSON.parse(message);
+    const room = `candles-${candle.symbol}-${candle.timeframe}`;
+    io.to(room).emit("candle-snapshot", candle);
   });
 
-  await subscriber.subscribe("live-trades", (message) => {
+  await subscriber.subscribe("trades", (message) => {
     const trade = JSON.parse(message);
     const room = `trades-${trade.symbol}`;
     io.to(room).emit("live-trade", trade);
@@ -49,10 +53,22 @@ io.on("connection", (socket) => {
     console.log(`Client subscribed to ${room}`);
   });
 
+  socket.on("unsubscribe-candles", async ({ symbol, timeframe }) => {
+    const room = `candles-${symbol}-${timeframe}`;
+    await socket.leave(room);
+    console.log(`Client unsubscribed from ${room}`);
+  });
+
   socket.on("subscribe-trades", async ({ symbol }) => {
     const room = `trades-${symbol}`;
     await socket.join(room);
     console.log(`Client subscribed to live trades: ${room}`);
+  });
+
+  socket.on("unsubscribe-trades", async ({ symbol }) => {
+    const room = `trades-${symbol}`;
+    await socket.leave(room);
+    console.log(`Client unsubscribed from ${room}`);
   });
 
   socket.on("disconnect", () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthProvider } from "@/contexts/auth-context";
+import { PriceProvider } from "@/contexts/price-context";
 import {
   ThemeProvider as NextThemesProvider,
   type ThemeProviderProps,
@@ -26,7 +27,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableSystem
       disableTransitionOnChange
     >
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <PriceProvider>{children}</PriceProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }
