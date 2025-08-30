@@ -7,6 +7,7 @@ export interface User {
 export interface UserRequest {
   email: string;
   password: string;
+  full_name?: string;
 }
 
 export interface AuthResponse {
