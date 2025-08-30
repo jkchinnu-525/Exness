@@ -278,27 +278,22 @@ export default function Candles({
     const currentTime = getTimeBucket(trade.timestamp, timeframe);
     const candleTime = Math.floor(currentTime / 1000) as Time;
 
-    // ✅ FIXED: Persist completed candle when time period changes
     if (liveCandle.current && liveCandle.current.time !== candleTime) {
-      // Save completed candle to historical data
-      const completedCandle = liveCandle.current; // Store reference before null check
+      const completedCandle = liveCandle.current;
       const existingIndex = candlesRef.current.findIndex(
         (c) => c.time === completedCandle.time
       );
-      
+
       if (existingIndex >= 0) {
-        // Update existing candle in history
         candlesRef.current[existingIndex] = completedCandle;
       } else {
-        // Add new candle to history
         candlesRef.current.push(completedCandle);
-        candlesRef.current = candlesRef.current.slice(-100); // Keep last 100
+        candlesRef.current = candlesRef.current.slice(-100);
       }
-      
+
       console.log(`Persisted completed candle: ${completedCandle.time}`);
     }
 
-    // Create new candle or update existing one
     if (!liveCandle.current || liveCandle.current.time !== candleTime) {
       liveCandle.current = {
         time: candleTime,

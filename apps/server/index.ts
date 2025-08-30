@@ -26,12 +26,6 @@ async function setupRedis() {
   await subscriber.connect();
   console.log("Redis subscriber connected");
 
-  // await subscriber.subscribe("live-candles", (message) => {
-  //   const candle = JSON.parse(message);
-  //   const room = `candles-${candle.symbol}-${candle.timeframe}`;
-  //   io.to(room).emit("live-candle", candle);
-  // });
-
   await subscriber.subscribe("candle-snapshots", (message) => {
     const candle = JSON.parse(message);
     const room = `candles-${candle.symbol}-${candle.timeframe}`;
