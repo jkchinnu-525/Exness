@@ -27,9 +27,5 @@ export function findById(userId: string) {
   if (!user) {
     return null;
   }
-  return {
-    id: user.id,
-    email: user.email,
-    demo_balance: user.demo_balance,
-  };
+  return user;
 }

@@ -88,7 +88,7 @@ router.post("/simple-order/close", authenticateUser, async (req, res) => {
     success: true,
     message: "Order Closed",
     newBalance: newBalance,
-    deductedAmount: totalReturn,
+    ReturnedAmount: totalReturn,
   });
 });
 
