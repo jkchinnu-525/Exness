@@ -14,6 +14,7 @@ import {
   Type,
 } from "lucide-react";
 import { useState } from "react";
+import { usePrices } from "../contexts/price-context";
 
 interface ChartAreaProps {
   symbol: string;
@@ -47,70 +48,49 @@ export function ChartArea({
   const [activeTool, setActiveTool] = useState("cursor");
   const [showIndicators, setShowIndicators] = useState(false);
 
-  // Mock price data for crypto symbols
-  const getMockData = (sym: string) => {
-    if (sym === "BTCUSDT") {
-      return {
-        price: "110,889.42",
-        change: "+144.46",
-        changePercent: "+0.13%",
-        name: "Bitcoin vs US Dollar",
-      };
-    } else if (sym === "ETHUSDT") {
-      return {
-        price: "4,180.25",
-        change: "+82.15",
-        changePercent: "+2.00%",
-        name: "Ethereum vs US Dollar",
-      };
-    } else if (sym === "SOLUSDT") {
-      return {
-        price: "245.67",
-        change: "-5.33",
-        changePercent: "-2.12%",
-        name: "Solana vs US Dollar",
-      };
-    }
-    return {
-      price: "0.00",
-      change: "0.00",
-      changePercent: "0.00%",
-      name: symbol,
-    };
-  };
+  // Get real-time prices
+  const { prices } = usePrices();
+  const priceData = prices[symbol];
 
-  const mockData = getMockData(symbol);
-  const isPositive = !mockData.change.startsWith("-");
+  // Use real-time data or fallback values
+  const currentPrice = priceData?.price || 0;
+  const formatPrice = (price: number) => {
+    return price.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8,
+    });
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-[#0b0e11]">
       {/* Chart Header */}
       <div className="h-16 border-b border-[#1f2a35] px-4 flex items-center justify-between">
-        {/* Symbol Info */}
+        {/* OHLC Info */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="text-blue-400" size={20} />
-            <div>
-              <h2 className="text-lg font-semibold text-white">
-                {mockData.name} • {timeframe}
-              </h2>
-            </div>
+            <span className="text-lg font-semibold text-white">
+              {timeframe}
+            </span>
           </div>
 
-          {/* Price Info */}
+          {/* Real-time OHLC */}
           <div className="flex items-center gap-4 text-sm">
             <span className="text-gray-400">O</span>
-            <span className="text-white font-mono">{mockData.price}</span>
+            <span className="text-white font-mono">
+              {formatPrice(currentPrice)}
+            </span>
             <span className="text-gray-400">H</span>
-            <span className="text-white font-mono">{mockData.price}</span>
+            <span className="text-white font-mono">
+              {formatPrice(currentPrice)}
+            </span>
             <span className="text-gray-400">L</span>
-            <span className="text-white font-mono">{mockData.price}</span>
+            <span className="text-white font-mono">
+              {formatPrice(currentPrice)}
+            </span>
             <span className="text-gray-400">C</span>
-            <span className="text-white font-mono">{mockData.price}</span>
-            <span
-              className={`font-medium ${isPositive ? "text-green-400" : "text-red-400"}`}
-            >
-              {mockData.change} ({mockData.changePercent})
+            <span className="text-white font-mono">
+              {formatPrice(currentPrice)}
             </span>
           </div>
         </div>
@@ -195,9 +175,9 @@ export function ChartArea({
         <div className="absolute top-4 right-4 bg-[#1f2a35] rounded px-3 py-2 text-sm">
           <div className="text-gray-400">Current Price</div>
           <div
-            className={`font-mono text-lg font-semibold ${isPositive ? "text-green-400" : "text-red-400"}`}
+            className={`font-mono text-lg font-semibold ${priceData?.trending === "up" ? "text-green-400" : "text-red-400"}`}
           >
-            {mockData.price}
+            {formatPrice(currentPrice)}
           </div>
         </div>
       </div>

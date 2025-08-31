@@ -1,5 +1,6 @@
 import { createClient } from "redis";
 import { client, connectDB } from "./db/connection";
+import { integerToPrice } from "./utils/price";
 
 const subscriber = createClient({
   url: "redis://localhost:6379",
@@ -28,7 +29,8 @@ async function startConsumer() {
 }
 
 function processTrade(trade: any) {
-  const { symbol, price, timestamp } = trade;
+  const { symbol, price: priceInteger, timestamp } = trade;
+  const price = integerToPrice(priceInteger);
 
   storeTrade(trade);
 
@@ -41,7 +43,7 @@ function processTrade(trade: any) {
     const existingCandle = candles.get(bucketKey);
     if (existingCandle && existingCandle.startTime < currentBucketStart) {
       console.log(
-        `Completed candle: ${bucketKey} (${existingCandle.startTime} -> ${currentBucketStart})`
+        `Completed candle: ${bucketKey} (${existingCandle.startTime} -> ${currentBucketStart})`,
       );
       candles.delete(bucketKey);
     }
@@ -94,12 +96,12 @@ async function broadcastCandleUpdates() {
         try {
           await publisher.publish(
             "candle-snapshots",
-            JSON.stringify(candleData)
+            JSON.stringify(candleData),
           );
         } catch (error) {
           console.error(
             `Error broadcasting snapshot for ${symbol} ${timeframe}:`,
-            error
+            error,
           );
         }
       }
@@ -125,7 +127,7 @@ async function storeTrade(trade: any) {
         trade.price,
         trade.price,
         trade.price,
-      ]
+      ],
     );
     console.log(`Stored trade for ${trade.symbol} at ${trade.timestamp}`);
   } catch (err) {

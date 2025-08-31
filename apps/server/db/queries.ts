@@ -1,6 +1,10 @@
 import { Candle, Timeframe } from "../types/candles";
 import { query } from "./connection";
 
+function integerToPrice(priceInt: string | number): number {
+  return Number(priceInt) / 100000000;
+}
+
 export async function getCandles(
   symbol: string,
   timeframe: Timeframe,
@@ -36,10 +40,10 @@ export async function getCandles(
     return result.rows.map((row) => ({
       time: row.time,
       symbol: row.symbol,
-      open: parseFloat(row.open),
-      high: parseFloat(row.high),
-      low: parseFloat(row.low),
-      close: parseFloat(row.close),
+      open: integerToPrice(row.open),
+      high: integerToPrice(row.high),
+      low: integerToPrice(row.low),
+      close: integerToPrice(row.close),
     }));
   } catch (error) {
     console.error("Error fetching candles:", error);

@@ -1,5 +1,6 @@
 import { createClient } from "redis";
 import { w3cwebsocket as WebSocket } from "websocket";
+import { priceToInteger } from "../utils/price";
 
 const URL =
   "wss://stream.binance.com:9443/stream?streams=btcusdt@trade/ethusdt@trade/solusdt@trade";
@@ -26,12 +27,20 @@ async function connect() {
     if (msg?.data?.e === "trade") {
       const trade = msg.data;
       const symbol = trade.s;
-      const price = Number(trade.p);
+      const priceInteger = priceToInteger(trade.p);
+      const price = parseFloat(trade.p);
       const quantity = Number(trade.q);
       const timestamp = Number(trade.T);
+      const priceSpreadPercentage = 2;
+      const priceSpread = price * (priceSpreadPercentage / 100);
+      const bid = price - priceSpread / 2;
+      const ask = price + priceSpread / 2;
+
       const tradeData = {
         symbol,
-        price,
+        price: priceInteger, //Storing as integer
+        bid: bid,
+        ask: ask,
         quantity,
         timestamp,
       };

@@ -3,11 +3,11 @@
 CREATE TABLE CANDLE_TABLE (
     time TIMESTAMPTZ NOT NULL,
     symbol TEXT NOT NULL,
-    price DECIMAL(20, 8) NOT NULL,
-    high DECIMAL(20, 8),
-    low DECIMAL(20, 8),
-    open DECIMAL(20, 8),
-    close DECIMAL(20, 8)
+    price BIGINT NOT NULL,
+    high BIGINT,
+    low BIGINT,
+    open BIGINT,
+    close BIGINT
 );
 
 SELECT create_hypertable('CANDLE_TABLE', 'time');

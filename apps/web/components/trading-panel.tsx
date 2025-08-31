@@ -2,6 +2,7 @@
 
 import { Settings, TrendingDown, TrendingUp } from "lucide-react";
 import { useState } from "react";
+import { usePrices } from "../contexts/price-context";
 
 interface TradingPanelProps {
   symbol: string;
@@ -14,35 +15,25 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
   const [takeProfit, setTakeProfit] = useState("");
   const [activeTab, setActiveTab] = useState<"buy" | "sell">("buy");
 
-  // Mock data for crypto symbols
-  const getMockPriceData = (sym: string) => {
-    if (sym === "BTCUSDT") {
-      return {
-        sellPrice: "110,889.42",
-        buyPrice: "110,911.02",
-        spread: "21.60",
-      };
-    } else if (sym === "ETHUSDT") {
-      return {
-        sellPrice: "4,180.25",
-        buyPrice: "4,182.75",
-        spread: "2.50",
-      };
-    } else if (sym === "SOLUSDT") {
-      return {
-        sellPrice: "245.67",
-        buyPrice: "245.89",
-        spread: "0.22",
-      };
-    }
-    return {
-      sellPrice: "0.00",
-      buyPrice: "0.00",
-      spread: "0.00",
-    };
-  };
+  // Get real-time prices
+  const { prices, isConnected } = usePrices();
+  const priceData = prices[symbol];
 
-  const priceData = getMockPriceData(symbol);
+  // Fallback for when data isn't available yet
+  if (!priceData || !isConnected) {
+    return (
+      <div className="w-80 bg-[#0f1419] border-l border-[#1f2a35] flex flex-col">
+        <div className="p-4 border-b border-[#1f2a35]">
+          <div className="text-center text-gray-400">
+            Loading price data...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate spread
+  const spread = priceData.ask - priceData.bid;
 
   return (
     <div className="w-80 bg-[#0f1419] border-l border-[#1f2a35] flex flex-col">
@@ -55,22 +46,43 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
           </button>
         </div>
 
-        {/* Price Display */}
+        {/* Real-time Price Display */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-xs text-gray-400">Sell</span>
+            <span className="text-xs text-gray-400">Sell (Bid)</span>
             <span className="text-lg font-mono text-red-400">
-              {priceData.sellPrice}
+              {priceData.bid.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8
+              })}
             </span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-xs text-gray-400">Buy</span>
+            <span className="text-xs text-gray-400">Buy (Ask)</span>
             <span className="text-lg font-mono text-green-400">
-              {priceData.buyPrice}
+              {priceData.ask.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 8
+              })}
             </span>
           </div>
           <div className="text-xs text-gray-500">
-            Spread: {priceData.spread} USD
+            Spread: {spread.toFixed(2)} USD
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-400">
+              Change: {priceData.changePercent.toFixed(2)}%
+            </span>
+            <div className="flex items-center">
+              {priceData.trending === "up" ? (
+                <TrendingUp className="w-3 h-3 text-green-400 mr-1" />
+              ) : (
+                <TrendingDown className="w-3 h-3 text-red-400 mr-1" />
+              )}
+              <span className={priceData.trending === "up" ? "text-green-400" : "text-red-400"}>
+                {priceData.change.toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

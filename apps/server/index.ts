@@ -22,6 +22,10 @@ app.use(express.json());
 app.use("/api/candles", candleRoutes);
 app.use("/api/auth", authRoutes);
 
+function integerToDecimal(price: string) {
+  return parseInt(price) / 100000000;
+}
+
 async function setupRedis() {
   await subscriber.connect();
   console.log("Redis subscriber connected");
@@ -34,8 +38,12 @@ async function setupRedis() {
 
   await subscriber.subscribe("trades", (message) => {
     const trade = JSON.parse(message);
+    const convertedTrade = {
+      ...trade,
+      price: integerToDecimal(trade.price),
+    };
     const room = `trades-${trade.symbol}`;
-    io.to(room).emit("live-trade", trade);
+    io.to(room).emit("live-trade", convertedTrade);
   });
 }
 
