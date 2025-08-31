@@ -24,9 +24,7 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
     return (
       <div className="w-80 bg-[#0f1419] border-l border-[#1f2a35] flex flex-col">
         <div className="p-4 border-b border-[#1f2a35]">
-          <div className="text-center text-gray-400">
-            Loading price data...
-          </div>
+          <div className="text-center text-gray-400">Loading price data...</div>
         </div>
       </div>
     );
@@ -51,18 +49,18 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-400">Sell (Bid)</span>
             <span className="text-lg font-mono text-red-400">
-              {priceData.bid.toLocaleString('en-US', {
+              {priceData.bid.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
-                maximumFractionDigits: 8
+                maximumFractionDigits: 8,
               })}
             </span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-xs text-gray-400">Buy (Ask)</span>
             <span className="text-lg font-mono text-green-400">
-              {priceData.ask.toLocaleString('en-US', {
+              {priceData.ask.toLocaleString("en-US", {
                 minimumFractionDigits: 2,
-                maximumFractionDigits: 8
+                maximumFractionDigits: 8,
               })}
             </span>
           </div>
@@ -79,7 +77,13 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
               ) : (
                 <TrendingDown className="w-3 h-3 text-red-400 mr-1" />
               )}
-              <span className={priceData.trending === "up" ? "text-green-400" : "text-red-400"}>
+              <span
+                className={
+                  priceData.trending === "up"
+                    ? "text-green-400"
+                    : "text-red-400"
+                }
+              >
                 {priceData.change.toFixed(2)}
               </span>
             </div>

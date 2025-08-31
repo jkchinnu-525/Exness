@@ -191,9 +191,9 @@ export function InstrumentsSidebar({
                             : "bg-gray-700 text-white"
                         }`}
                       >
-                        {priceData.bid.toLocaleString('en-US', {
+                        {priceData.bid.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
+                          maximumFractionDigits: 2,
                         })}
                       </div>
                     ) : (
@@ -210,9 +210,9 @@ export function InstrumentsSidebar({
                             : "bg-gray-700 text-white"
                         }`}
                       >
-                        {priceData.ask.toLocaleString('en-US', {
+                        {priceData.ask.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
+                          maximumFractionDigits: 2,
                         })}
                       </div>
                     ) : (

@@ -5,6 +5,7 @@ import { createClient } from "redis";
 import { Server } from "socket.io";
 import authRoutes from "./routes/auth";
 import candleRoutes from "./routes/candles";
+import orderRoutes from "./routes/orders";
 
 const app = express();
 const server = createServer(app);
@@ -20,6 +21,7 @@ const subscriber = createClient({ url: "redis://localhost:6379" });
 app.use(cors());
 app.use(express.json());
 app.use("/api/candles", candleRoutes);
+app.use("/api/order", orderRoutes);
 app.use("/api/auth", authRoutes);
 
 function integerToDecimal(price: string) {
