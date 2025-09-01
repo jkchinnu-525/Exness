@@ -1,43 +1,90 @@
 import { Router } from "express";
 import { v4 as uuid } from "uuid";
 import {
+  activeLeverageOrders,
   activeOrders,
   authenticateUser,
+  calculateExposure,
+  calculateSecurity,
   checkBalance,
   updateBalance,
 } from "../services/orders";
-import { simpleOrder } from "../types/orders";
+import { leverageOrder, simpleOrder } from "../types/orders";
 const router = Router();
 
-// router.post("/leverage-order", authenticateUser, async (req, res) => {
-//   const { quantity, openprice, security, leverage, exposure }: leverageOrder =
-//     req.body;
-//   const user = (req as any).user;
+router.post("/leverage-order", authenticateUser, async (req, res) => {
+  const { quantity, openprice, type, asset, leverage }: leverageOrder =
+    req.body;
+  const user = (req as any).user;
 
-//   if (!quantity || !openprice || !leverage) {
-//     return res.json({ error: "Please add all 3 required fields" });
-//   }
+  if (!quantity || !openprice || !leverage) {
+    return res.json({ error: "Please add all 3 required fields" });
+  }
 
-//   if (quantity <= 0 || openprice <= 0) {
-//     return res.json({ error: "Make sure to add values" });
-//   }
+  if (quantity <= 0 || openprice <= 0) {
+    return res.json({ error: "Make sure to add values" });
+  }
 
-//   if (leverage < 1 || leverage > 100) {
-//     return res.json({ error: "Leverage must only be between 1x & 10x" });
-//   }
+  if (leverage < 1 || leverage > 100) {
+    return res.json({ error: "Leverage must only be between 1x & 10x" });
+  }
 
-//   const totalPrice = quantity * openprice;
-//   const orderData: leverageOrder = {
-//     orderId: uuid(),
-//     userId: user.id,
-//     quantity,
-//     openprice,
-//     security,
-//     leverage,
-//     exposure,
-//   };
-//   return res.json({ success: true, order: orderData });
-// });
+  const security = calculateSecurity(quantity, openprice);
+  const exposure = calculateExposure(security, leverage);
+  if (!checkBalance(user, security)) {
+    return res.json({
+      error: "Insufficient funds",
+      required: security,
+    });
+  }
+  const newBalance = updateBalance(user.id, -security);
+  const order: leverageOrder = {
+    orderId: uuid(),
+    userId: user.id,
+    type,
+    asset,
+    quantity,
+    openprice,
+    security,
+    leverage,
+    exposure,
+  };
+  activeLeverageOrders.set(order.orderId, order);
+  return res.json({
+    success: true,
+    order: order,
+    securityDeducted: security,
+    totalExposure: exposure,
+    newBalance: newBalance,
+  });
+});
+
+router.post("/leverage-order/close", authenticateUser, async (req, res) => {
+  const { orderId, closePrice } = req.body;
+  const user = (req as any).user;
+
+  const order = activeLeverageOrders.get(orderId);
+  if (!order || order.userId !== user.id) {
+    return res.json({ error: "Order not found" });
+  }
+  const priceUpdate =
+    order.type === "buy"
+      ? closePrice - order.openprice
+      : order.openprice - closePrice;
+
+  const pnl = priceUpdate * order.quantity;
+  const totalReturn = order.security + pnl;
+  const newBalance = updateBalance(user.id, totalReturn);
+
+  activeLeverageOrders.delete(orderId);
+
+  return res.json({
+    success: true,
+    pnl: pnl,
+    totalReturn: totalReturn,
+    newBalance: newBalance,
+  });
+});
 
 router.post("/simple-order/open", authenticateUser, async (req, res) => {
   const { type, asset, openprice, quantity }: simpleOrder = req.body;

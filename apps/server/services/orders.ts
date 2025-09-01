@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
 import { findById } from "../types/creatUser";
-import { simpleOrder } from "../types/orders";
+import { leverageOrder, simpleOrder } from "../types/orders";
 import { JwtPayload } from "../types/user";
 
 const JWT_SECRET = process.env.JWT_SECRET || "123";
 export const activeOrders = new Map<string, simpleOrder>();
+export const activeLeverageOrders = new Map<string, leverageOrder>();
 
 export function authenticateUser(req: any, res: any, next: any) {
   const token = req.headers.authorization?.replace("Bearer ", "");
@@ -37,4 +38,19 @@ export function updateBalance(userId: string, amount: number) {
     return user?.demo_balance;
   }
   return null;
+}
+
+export function calculateSecurity(quantity: number, price: number) {
+  return quantity * price;
+}
+
+export function calculateExposure(security: number, leverage: number) {
+  return security * leverage;
+}
+
+export function autoCloseOrder(order: leverageOrder, currentPrice: number) {
+  const currentValue = order.quantity * currentPrice;
+  const loss = Math.abs(order.security - currentValue);
+  const lossPercentage = (loss / order.security) * 100;
+  return lossPercentage >= 90;
 }
