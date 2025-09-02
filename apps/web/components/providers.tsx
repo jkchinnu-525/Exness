@@ -1,6 +1,8 @@
 "use client";
 
 import { AuthProvider } from "@/contexts/auth-context";
+import { BalanceProvider } from "@/contexts/balance-context";
+import { OrdersProvider } from "@/contexts/orders-context";
 import { PriceProvider } from "@/contexts/price-context";
 import {
   ThemeProvider as NextThemesProvider,
@@ -28,7 +30,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <AuthProvider>
-        <PriceProvider>{children}</PriceProvider>
+        <PriceProvider>
+          <OrdersProvider>
+            <BalanceProvider>{children}</BalanceProvider>
+          </OrdersProvider>
+        </PriceProvider>
       </AuthProvider>
     </ThemeProvider>
   );

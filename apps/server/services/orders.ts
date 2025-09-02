@@ -22,8 +22,8 @@ export function authenticateUser(req: any, res: any, next: any) {
     }
     req.user = user;
     next();
-  } catch {
-    res.json({ error: "Invalid Token" });
+  } catch (error) {
+    return res.json({ error: "Invalid Token" });
   }
 }
 

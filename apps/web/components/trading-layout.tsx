@@ -3,9 +3,9 @@
 import { AuthHeader } from "@/components/auth-header";
 import { ChartArea } from "@/components/chart-area";
 import { InstrumentsSidebar } from "@/components/instruments-sidebar";
-import { PositionsPanel } from "@/components/positions-panel";
 import { ProtectedRoute } from "@/components/protected-route";
 import { TradingPanel } from "@/components/trading-panel";
+import { TradingDashboard } from "@/components/trading_dashboard";
 import { useState } from "react";
 
 export function TradingLayout() {
@@ -28,24 +28,23 @@ export function TradingLayout() {
             onSymbolSelect={setSelectedSymbol}
           />
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col">
-            {/* Top Section - Chart and Trading Panel */}
-            <div className="flex-1 flex">
-              {/* Chart Area */}
+          {/* Main Content Area - Chart with overlay */}
+          <div className="flex-1 relative min-h-0 bg-[#0b0e11]">
+            {/* Chart Area - Full height */}
+            <div className="absolute inset-0">
               <ChartArea
                 symbol={selectedSymbol}
                 timeframe={selectedTimeframe}
                 onTimeframeChange={setSelectedTimeframe}
               />
-
-              {/* Right Panel - Trading */}
-              <TradingPanel symbol={selectedSymbol} />
             </div>
 
-            {/* Bottom Panel - Positions/Orders */}
-            <PositionsPanel />
+            {/* Trading Dashboard - Overlay at bottom */}
+            <TradingDashboard />
           </div>
+
+          {/* Right Panel - Trading (Separate from main content) */}
+          <TradingPanel symbol={selectedSymbol} />
         </div>
       </div>
     </ProtectedRoute>

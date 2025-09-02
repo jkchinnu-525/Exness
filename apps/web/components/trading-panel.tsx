@@ -2,6 +2,7 @@
 
 import { Settings, TrendingDown, TrendingUp } from "lucide-react";
 import { useState } from "react";
+import { useOrders } from "../contexts/orders-context";
 import { usePrices } from "../contexts/price-context";
 
 interface TradingPanelProps {
@@ -11,13 +12,43 @@ interface TradingPanelProps {
 export function TradingPanel({ symbol }: TradingPanelProps) {
   const [orderType, setOrderType] = useState<"market" | "pending">("market");
   const [volume, setVolume] = useState("0.01");
+  const [leverage, setLeverage] = useState("1");
   const [stopLoss, setStopLoss] = useState("");
   const [takeProfit, setTakeProfit] = useState("");
   const [activeTab, setActiveTab] = useState<"buy" | "sell">("buy");
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
 
-  // Get real-time prices
+  // Get real-time prices and orders context
   const { prices, isConnected } = usePrices();
+  const { placeOrder, error: orderError } = useOrders();
   const priceData = prices[symbol];
+
+  const handlePlaceOrder = async () => {
+    if (!priceData || !volume) return;
+
+    setIsPlacingOrder(true);
+
+    try {
+      const orderData = {
+        type: activeTab,
+        asset: symbol,
+        openprice: activeTab === "buy" ? priceData.ask : priceData.bid,
+        quantity: parseFloat(volume),
+        leverage: parseFloat(leverage),
+      };
+
+      await placeOrder(orderData);
+
+      // Reset form after successful order
+      setVolume("0.01");
+      setStopLoss("");
+      setTakeProfit("");
+    } catch (err) {
+      console.error("Failed to place order:", err);
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
 
   // Fallback for when data isn't available yet
   if (!priceData || !isConnected) {
@@ -102,7 +133,7 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
                 : "text-gray-400 hover:text-white"
             }`}
           >
-            Market
+            Buy
           </button>
           <button
             onClick={() => setOrderType("pending")}
@@ -112,7 +143,7 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
                 : "text-gray-400 hover:text-white"
             }`}
           >
-            Pending
+            Sell
           </button>
         </div>
       </div>
@@ -138,79 +169,40 @@ export function TradingPanel({ symbol }: TradingPanelProps) {
           </div>
         </div>
 
-        {/* Stop Loss */}
+        {/* Leverage */}
         <div>
-          <label className="block text-xs text-gray-400 mb-2">Stop Loss</label>
+          <label className="block text-xs text-gray-400 mb-2">Leverage</label>
           <div className="flex items-center bg-[#1f2a35] rounded">
             <input
-              type="text"
-              value={stopLoss}
-              onChange={(e) => setStopLoss(e.target.value)}
-              placeholder="Not set"
-              className="flex-1 bg-transparent px-3 py-2 text-white text-sm focus:outline-none placeholder-gray-500"
+              type="number"
+              value={leverage}
+              onChange={(e) => setLeverage(e.target.value)}
+              className="flex-1 bg-transparent px-3 py-2 text-white text-sm focus:outline-none"
+              step="1"
+              min="1"
+              max="100"
             />
-            <button className="px-3 text-xs text-gray-400 hover:text-white">
-              Price
-            </button>
+            <span className="px-3 text-xs text-gray-400">x</span>
           </div>
         </div>
 
-        {/* Take Profit */}
-        <div>
-          <label className="block text-xs text-gray-400 mb-2">
-            Take Profit
-          </label>
-          <div className="flex items-center bg-[#1f2a35] rounded">
-            <input
-              type="text"
-              value={takeProfit}
-              onChange={(e) => setTakeProfit(e.target.value)}
-              placeholder="Not set"
-              className="flex-1 bg-transparent px-3 py-2 text-white text-sm focus:outline-none placeholder-gray-500"
-            />
-            <button className="px-3 text-xs text-gray-400 hover:text-white">
-              Price
-            </button>
+        {/* Error Display */}
+        {orderError && (
+          <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-sm">
+            {orderError}
           </div>
-        </div>
+        )}
 
-        {/* Buy/Sell Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-4">
-          <button
-            onClick={() => setActiveTab("sell")}
-            className="flex items-center justify-center gap-2 py-3 bg-red-500 hover:bg-red-600 text-white rounded font-medium transition-colors"
-          >
-            <TrendingDown size={16} />
-            SELL
-          </button>
-          <button
-            onClick={() => setActiveTab("buy")}
-            className="flex items-center justify-center gap-2 py-3 bg-green-500 hover:bg-green-600 text-white rounded font-medium transition-colors"
-          >
-            <TrendingUp size={16} />
-            BUY
-          </button>
-        </div>
-
-        {/* Account Info */}
-        <div className="pt-4 border-t border-[#1f2a35] space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Free Margin:</span>
-            <span className="text-white font-mono">10,000.00 USD</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Balance:</span>
-            <span className="text-white font-mono">10,000.00 USD</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Margin:</span>
-            <span className="text-white font-mono">0.00 USD</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Margin level:</span>
-            <span className="text-white font-mono">-</span>
-          </div>
-        </div>
+        {/* Place Order Button */}
+        <button
+          onClick={handlePlaceOrder}
+          disabled={isPlacingOrder || !volume}
+          className="w-full cursor-pointer py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded font-medium transition-colors"
+        >
+          {isPlacingOrder
+            ? "Placing Order..."
+            : `Place ${activeTab.toUpperCase()} Order`}
+        </button>
       </div>
     </div>
   );

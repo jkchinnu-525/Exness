@@ -1,11 +1,13 @@
 "use client";
 
 import { useAuth } from "@/contexts/auth-context";
+import { useBalance } from "@/contexts/balance-context";
 import { Button } from "@workspace/ui";
 import { useRouter } from "next/navigation";
 
 export function AuthHeader() {
   const { user, signout, isAuthenticated } = useAuth();
+  const { totalBalance, isLoading } = useBalance();
   const router = useRouter();
 
   const handleSignOut = () => {
@@ -16,6 +18,9 @@ export function AuthHeader() {
   if (!isAuthenticated || !user) {
     return null;
   }
+
+  // Add safety check for totalBalance
+  const safeTotalBalance = totalBalance ?? 0;
 
   return (
     <div className="bg-[#1a1d23] border-b border-[#2a2d35] px-4 py-3 flex items-center justify-between">
@@ -46,7 +51,12 @@ export function AuthHeader() {
         <div className="text-right">
           <p className="text-sm text-gray-300">Welcome, {user.full_name}</p>
           <p className="text-xs text-green-400">
-            Demo Balance: ${user.demo_balance.toLocaleString()}
+            {isLoading
+              ? "Loading balance..."
+              : `Demo Balance: $${safeTotalBalance.toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`}
           </p>
         </div>
 
