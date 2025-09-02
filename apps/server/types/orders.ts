@@ -17,4 +17,5 @@ export interface simpleOrder {
   type: "buy" | "sell";
   openprice: number;
   quantity: number;
+  margin?: number;
 }

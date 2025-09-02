@@ -16,7 +16,7 @@ router.post("/open", authenticateUser, async (req, res) => {
   const { quantity, openprice, type, asset, leverage } = req.body;
   const user = (req as any).user;
 
-  if (!quantity || !openprice || !type || !asset) {
+  if (!quantity || !openprice) {
     return res.json({
       error:
         "Please provide all required fields: quantity, openprice, type, asset",
@@ -28,12 +28,15 @@ router.post("/open", authenticateUser, async (req, res) => {
       error: "Quantity and open price must be positive values",
     });
   }
+
   if (leverage) {
     if (leverage < 1 || leverage > 100) {
       return res.json({ error: "Leverage must be between 1x & 100x" });
     }
+
     const security = calculateSecurity(quantity, openprice);
     const exposure = calculateExposure(security, leverage);
+
     if (!checkBalance(user, security)) {
       return res.json({
         error: "Insufficient funds",
@@ -41,6 +44,7 @@ router.post("/open", authenticateUser, async (req, res) => {
         available: user.demo_balance,
       });
     }
+
     const newBalance = updateBalance(user.id, -security);
     const order: leverageOrder = {
       orderId: uuid(),
@@ -54,6 +58,7 @@ router.post("/open", authenticateUser, async (req, res) => {
       exposure,
     };
     activeLeverageOrders.set(order.orderId, order);
+
     return res.json({
       success: true,
       order: order,
@@ -62,30 +67,60 @@ router.post("/open", authenticateUser, async (req, res) => {
       newBalance: newBalance,
     });
   } else {
-    const totalPrice = quantity * openprice;
-    if (!checkBalance(user, totalPrice)) {
+    if (type === "buy") {
+      const totalPrice = quantity * openprice;
+      if (!checkBalance(user, totalPrice)) {
+        return res.json({
+          error: "Insufficient Funds",
+          required: totalPrice,
+          available: user.demo_balance,
+        });
+      }
+      const newBalance = updateBalance(user.id, -totalPrice);
+      const order: simpleOrder = {
+        orderId: uuid(),
+        userId: user.id,
+        type,
+        asset,
+        openprice,
+        quantity,
+      };
+      activeOrders.set(order.orderId, order);
       return res.json({
-        error: "Insufficient Funds",
-        required: totalPrice,
-        available: user.demo_balance,
+        success: true,
+        order: order,
+        newBalance: newBalance,
+        deductedAmount: totalPrice,
+      });
+    } else {
+      const marginRequired = quantity * openprice * 0.1;
+
+      if (!checkBalance(user, marginRequired)) {
+        return res.json({
+          error: "Insufficient margin for sell order",
+          required: marginRequired,
+          available: user.demo_balance,
+        });
+      }
+
+      const newBalance = updateBalance(user.id, -marginRequired);
+      const order: simpleOrder = {
+        orderId: uuid(),
+        userId: user.id,
+        type,
+        asset,
+        openprice,
+        quantity,
+      };
+      activeOrders.set(order.orderId, order);
+      return res.json({
+        success: true,
+        order: order,
+        newBalance: newBalance,
+        deductedAmount: marginRequired,
+        message: "Sell order opened with margin requirement",
       });
     }
-    const newBalance = updateBalance(user.id, -totalPrice);
-    const order: simpleOrder = {
-      orderId: uuid(),
-      userId: user.id,
-      type,
-      asset,
-      openprice,
-      quantity,
-    };
-    activeOrders.set(order.orderId, order);
-    return res.json({
-      success: true,
-      order: order,
-      newBalance: newBalance,
-      deductedAmount: totalPrice,
-    });
   }
 });
 
@@ -111,6 +146,7 @@ router.post("/close", authenticateUser, async (req, res) => {
       pnl: pnl,
       totalReturn: totalReturn,
       newBalance: newBalance,
+      orderType: "leverage",
     });
   }
 
@@ -122,10 +158,20 @@ router.post("/close", authenticateUser, async (req, res) => {
         : order.openprice - closePrice;
     const pnl = priceUpdate * order.quantity;
 
-    const newBalance = updateBalance(user.id, pnl);
+    let finalPnL = pnl;
+    if (order.type === "buy") {
+      finalPnL = pnl;
+    } else {
+      const sellProceeds = order.openprice * order.quantity;
+      finalPnL = sellProceeds + pnl;
+    }
+
+    const newBalance = updateBalance(user.id, finalPnL);
 
     console.log("💰 SERVER: Final balance update:", {
+      orderType: order.type,
       pnl,
+      finalPnL,
       newBalance,
     });
 
@@ -135,6 +181,8 @@ router.post("/close", authenticateUser, async (req, res) => {
       message: "Order Closed",
       newBalance: newBalance,
       pnl: pnl,
+      finalPnL: finalPnL,
+      orderType: order.type,
     });
   }
 
@@ -148,18 +196,21 @@ router.get("/active", authenticateUser, async (req, res) => {
       .filter((order) => order.userId === user.id)
       .map((order) => ({
         ...order,
+        orderCategory: "leverage",
         openTime: new Date().toISOString(),
       }));
     const orders = Array.from(activeOrders.values())
       .filter((order) => order.userId === user.id)
       .map((order) => ({
         ...order,
+        orderCategory: "simple",
         openTime: new Date().toISOString(),
       }));
     const allOrders = [...leverageOrders, ...orders];
     res.json({ success: true, orders: allOrders });
   } catch (error) {
     console.log(`Error while fetching orders: ${error} `);
+    res.json({ success: false, error: "Failed to fetch orders" });
   }
 });
 
